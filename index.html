@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>College Voting Portal</title>
+
+  <style>
+    :root {
+      --maroon: #6b0f1a;
+      --dark-maroon: #4a0710;
+      --gold: #d4af37;
+      --white: #ffffff;
+      --light-bg: #f8f3f0;
+      --text: #2b2b2b;
+      --gray: #666;
+    }
+
+    *{
+      margin:0;
+      padding:0;
+      box-sizing:border-box;
+      font-family: Arial, sans-serif;
+    }
+
+    body{
+      background: var(--light-bg);
+      color: var(--text);
+    }
+
+    /* NAVBAR */
+    .navbar{
+      width:100%;
+      padding:18px 50px;
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(10px);
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      position:fixed;
+      top:0;
+      left:0;
+      z-index:1000;
+      box-shadow:0 4px 12px rgba(0,0,0,0.08);
+    }
+
+    .logo{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      font-size:22px;
+      font-weight:bold;
+      color:var(--maroon);
+    }
+
+    .logo-icon{
+      width:38px;
+      height:38px;
+      border-radius:10px;
+      background:linear-gradient(135deg,var(--maroon),var(--dark-maroon));
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color:white;
+      font-weight:bold;
+    }
+
+    .nav-buttons{
+      display:flex;
+      gap:15px;
+    }
+
+    .btn{
+      padding:11px 22px;
+      border:none;
+      border-radius:10px;
+      cursor:pointer;
+      font-weight:bold;
+      transition:0.25s;
+      text-decoration:none;
+      display:inline-block;
+    }
+
+    .btn-outline{
+      border:2px solid var(--maroon);
+      color:var(--maroon);
+      background:white;
+    }
+
+    .btn-outline:hover{
+      background:var(--maroon);
+      color:white;
+    }
+
+    .btn-primary{
+      background:var(--gold);
+      color:var(--dark-maroon);
+    }
+
+    .btn-primary:hover{
+      background:#c19b2e;
+      transform:translateY(-2px);
+    }
+
+    /* HERO */
+    .hero{
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:120px 60px 60px;
+      background:
+      linear-gradient(rgba(75,7,16,0.82), rgba(107,15,26,0.9)),
+      url('https://images.unsplash.com/photo-1523580846011-d3a5bc25702b?q=80&w=1600&auto=format&fit=crop')
+      center/cover;
+    }
+
+    .hero-content{
+      max-width:1200px;
+      width:100%;
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:60px;
+      align-items:center;
+    }
+
+    .hero-left h1{
+      font-size:58px;
+      color:white;
+      line-height:1.1;
+      margin-bottom:25px;
+    }
+
+    .hero-left h1 span{
+      color:var(--gold);
+    }
+
+    .hero-left p{
+      font-size:18px;
+      color:#f3f3f3;
+      line-height:1.7;
+      margin-bottom:35px;
+      max-width:580px;
+    }
+
+    .hero-buttons{
+      display:flex;
+      gap:18px;
+      flex-wrap:wrap;
+    }
+
+    .hero-card{
+      background:white;
+      padding:40px;
+      border-radius:22px;
+      box-shadow:0 15px 40px rgba(0,0,0,0.25);
+      border-top:7px solid var(--gold);
+    }
+
+    .hero-card h2{
+      color:var(--maroon);
+      margin-bottom:18px;
+      font-size:30px;
+    }
+
+    .feature{
+      display:flex;
+      gap:15px;
+      margin-bottom:22px;
+      align-items:flex-start;
+    }
+
+    .feature-icon{
+      width:45px;
+      height:45px;
+      background:rgba(107,15,26,0.1);
+      border-radius:12px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color:var(--maroon);
+      font-weight:bold;
+      flex-shrink:0;
+    }
+
+    .feature h3{
+      color:var(--maroon);
+      margin-bottom:5px;
+      font-size:17px;
+    }
+
+    .feature p{
+      color:var(--gray);
+      line-height:1.5;
+      font-size:14px;
+    }
+
+    /* SECTION */
+    .section{
+      padding:90px 50px;
+    }
+
+    .section-title{
+      text-align:center;
+      margin-bottom:55px;
+    }
+
+    .section-title h2{
+      font-size:42px;
+      color:var(--maroon);
+      margin-bottom:10px;
+    }
+
+    .section-title p{
+      color:var(--gray);
+      font-size:17px;
+    }
+
+    .cards{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+      gap:30px;
+      max-width:1200px;
+      margin:auto;
+    }
+
+    .info-card{
+      background:white;
+      padding:35px;
+      border-radius:20px;
+      box-shadow:0 8px 25px rgba(0,0,0,0.08);
+      transition:0.25s;
+      border-top:5px solid var(--gold);
+    }
+
+    .info-card:hover{
+      transform:translateY(-5px);
+    }
+
+    .info-card h3{
+      color:var(--maroon);
+      margin-bottom:15px;
+    }
+
+    .info-card p{
+      color:var(--gray);
+      line-height:1.6;
+    }
+
+    /* FOOTER */
+    footer{
+      background:var(--dark-maroon);
+      color:white;
+      text-align:center;
+      padding:25px;
+    }
+
+    @media(max-width:900px){
+
+      .hero-content{
+        grid-template-columns:1fr;
+      }
+
+      .hero-left{
+        text-align:center;
+      }
+
+      .hero-left p{
+        margin:auto auto 35px;
+      }
+
+      .hero-buttons{
+        justify-content:center;
+      }
+
+      .hero-left h1{
+        font-size:42px;
+      }
+
+      .navbar{
+        padding:18px 20px;
+      }
+
+      .section{
+        padding:70px 20px;
+      }
+    }
+
+  </style>
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <div class="logo">
+      <div class="logo-icon">UV</div>
+        UNIVOTE
+    </div>
+
+    <div class="nav-buttons">
+      <a href="login.html" class="btn btn-outline">Login</a>
+      <a href="login.html" class="btn btn-primary">Get Started</a>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+
+    <div class="hero-content">
+
+      <div class="hero-left">
+        <h1>
+          Secure & Smart
+          <span>College Voting</span>
+          System
+        </h1>
+
+        <p>
+          A modern online voting platform for colleges and student organizations.
+          Create elections, manage organizations, and allow students to vote
+          securely in real-time.
+        </p>
+
+        <div class="hero-buttons">
+          <a href="login.html" class="btn btn-primary">
+            Start Voting
+          </a>
+
+          <a href="#features" class="btn btn-outline">
+            Learn More
+          </a>
+        </div>
+      </div>
+
+      <div class="hero-card">
+
+        <h2>Why Choose Us?</h2>
+
+        <div class="feature">
+          <div class="feature-icon">✓</div>
+          <div>
+            <h3>Secure Authentication</h3>
+            <p>Supabase powered authentication with email verification.</p>
+          </div>
+        </div>
+
+        <div class="feature">
+          <div class="feature-icon">⚡</div>
+          <div>
+            <h3>Fast & Real-Time</h3>
+            <p>Instant organization creation, joining, and vote tracking.</p>
+          </div>
+        </div>
+
+        <div class="feature">
+          <div class="feature-icon">🏛</div>
+          <div>
+            <h3>Organization Management</h3>
+            <p>Create and manage multiple college election organizations easily.</p>
+          </div>
+        </div>
+
+        <div class="feature">
+          <div class="feature-icon">📊</div>
+          <div>
+            <h3>Election Dashboard</h3>
+            <p>Track elections, participation, and voting activity in one place.</p>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </section>
+
+  <!-- FEATURES -->
+  <section class="section" id="features">
+
+    <div class="section-title">
+      <h2>Portal Features</h2>
+      <p>Everything needed for secure digital college elections</p>
+    </div>
+
+    <div class="cards">
+
+      <div class="info-card">
+        <h3>Create Organizations</h3>
+        <p>
+          Admins can create organizations with unique join codes
+          for students and members.
+        </p>
+      </div>
+
+      <div class="info-card">
+        <h3>Join with Codes</h3>
+        <p>
+          Students can securely join organizations using unique
+          generated organization codes.
+        </p>
+      </div>
+
+      <div class="info-card">
+        <h3>Secure Login</h3>
+        <p>
+          Authentication system with protected sessions and
+          email verification support.
+        </p>
+      </div>
+
+      <div class="info-card">
+        <h3>Modern Dashboard</h3>
+        <p>
+          Beautiful dashboard interface for managing elections,
+          organizations, and voting data.
+        </p>
+      </div>
+
+    </div>
+
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    © 2026 College Voting Portal • Secure Digital Elections
+  </footer>
+
+
+  <!-- SUPABASE -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+
+<script>
+const supabase = window.supabase.createClient(
+  "https://soiufzbqvwillwockoro.supabase.co",
+  "sb_publishable_7bi7bDV6XBm37pzcxtn7uw_CrMmwuw1"
+);
+// AUTO REDIRECT IF LOGGED IN
+(async () => {
+
+  // VERIFY REAL USER FROM SERVER
+  const { data, error } =
+    await supabase.auth.getUser();
+
+  if (error) {
+    console.log(error.message);
+    return;
+  }
+
+  // user actually exists
+  if (data.user) {
+    window.location.href = "dashboard.html";
+  }
+
+})();
+</script>
+
+</body>
+</html>

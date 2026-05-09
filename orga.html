@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Create or Join Organization</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="auth-container">
+  <div class="auth-card">
+    <h1>Create or Join Organization</h1>
+    <p class="subtitle">Manage your college election space securely</p>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button type="button" id="createTab" class="active">Create</button>
+      <button type="button" id="joinTab">Join Organization</button>
+    </div>
+
+    <div class="org-grid">
+
+      <!-- CREATE FORM -->
+      <form id="createOrgForm" class="org-form">
+
+        <label>Organization Name</label>
+        <input type="text" id="orgName" placeholder="e.g., Student Council" required>
+
+        <label>Election Type</label>
+        <input type="text" id="electionType" placeholder="e.g., President Election" required>
+
+        <button class="main-btn" type="submit">Create Organization</button>
+
+      </form>
+
+      <!-- JOIN FORM -->
+      <form id="joinOrgForm" class="org-form" style="display:none;">
+
+        <label>Organization Code</label>
+        <input type="text" id="orgCode" placeholder="Enter ORG-XXXXXX code" required>
+
+        <button class="main-btn" type="submit">Join Organization</button>
+
+      </form>
+
+    </div>
+
+    <p class="small-text" id="infoText">
+      Create your organization or join with code
+    </p>
+  </div>
+</div>
+
+<!-- SUPABASE -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+
+  const supabase = window.supabase.createClient(
+    "https://soiufzbqvwillwockoro.supabase.co",
+    "sb_publishable_7bi7bDV6XBm37pzcxtn7uw_CrMmwuw1"
+  );
+
+  // elements
+  const createTab = document.getElementById("createTab");
+  const joinTab = document.getElementById("joinTab");
+
+  const createForm = document.getElementById("createOrgForm");
+  const joinForm = document.getElementById("joinOrgForm");
+
+  const infoText = document.getElementById("infoText");
+
+  let currentUser = null;
+
+  // ================= GET CURRENT USER =================
+  (async () => {
+
+    const { data } = await supabase.auth.getUser();
+
+    if (!data.user) {
+      window.location.href = "login.html";
+      return;
+    }
+
+    currentUser = data.user;
+
+  })();
+
+  // ================= TAB SWITCH =================
+  function setMode(mode) {
+
+    createTab.classList.remove("active");
+    joinTab.classList.remove("active");
+
+    if (mode === "create") {
+
+      createTab.classList.add("active");
+
+      createForm.style.display = "block";
+      joinForm.style.display = "none";
+
+      infoText.innerText =
+        "Create your organization space";
+
+    } else {
+
+      joinTab.classList.add("active");
+
+      joinForm.style.display = "block";
+      createForm.style.display = "none";
+
+      infoText.innerText =
+        "Join existing organization using code";
+    }
+  }
+
+  createTab.addEventListener("click", (e) => {
+    e.preventDefault();
+    setMode("create");
+  });
+
+  joinTab.addEventListener("click", (e) => {
+    e.preventDefault();
+    setMode("join");
+  });
+
+  // default
+  setMode("create");
+
+  // ================= CREATE ORGANIZATION =================
+  createForm.addEventListener("submit", async (e) => {
+
+    e.preventDefault();
+
+    // wait for user
+    if (!currentUser) {
+      alert("Loading user session...");
+      return;
+    }
+
+    const orgName =
+      document.getElementById("orgName").value.trim();
+
+    const electionType =
+      document.getElementById("electionType").value.trim();
+
+    if (!orgName || !electionType) {
+      alert("Please fill all fields");
+      return;
+    }
+
+    // generate org code
+    const code =
+      "ORG-" +
+      Math.random()
+        .toString(36)
+        .substring(2, 8)
+        .toUpperCase();
+
+    // insert organization
+    const { data: org, error: orgError } =
+      await supabase
+        .from("organizations")
+        .insert([
+          {
+            name: orgName,
+            election_type: electionType,
+            code: code,
+            created_by: currentUser.id
+          }
+        ])
+        .select()
+        .single();
+
+    if (orgError) {
+      alert(orgError.message);
+      return;
+    }
+
+    // insert membership as admin
+    const { error: memError } =
+      await supabase
+        .from("memberships")
+        .insert([
+          {
+            user_id: currentUser.id,
+            org_id: org.id,
+            role: "admin"
+          }
+        ]);
+
+    if (memError) {
+      alert(memError.message);
+      return;
+    }
+
+    alert("Organization Created!\nCode: " + code);
+
+    window.location.href = "dashboard.html";
+
+  });
+
+  // ================= JOIN ORGANIZATION =================
+  joinForm.addEventListener("submit", async (e) => {
+
+    e.preventDefault();
+
+    // wait for user
+    if (!currentUser) {
+      alert("Loading user session...");
+      return;
+    }
+
+    const orgCode =
+      document.getElementById("orgCode")
+      .value
+      .trim()
+      .toUpperCase();
+
+    if (!orgCode) {
+      alert("Enter organization code");
+      return;
+    }
+
+    // find organization
+    const { data: org, error: orgError } =
+      await supabase
+        .from("organizations")
+        .select("*")
+        .eq("code", orgCode)
+        .single();
+
+    if (orgError || !org) {
+      alert("Invalid organization code");
+      return;
+    }
+
+    // prevent duplicate joins
+    const { data: existingMembership } =
+      await supabase
+        .from("memberships")
+        .select("*")
+        .eq("user_id", currentUser.id)
+        .eq("org_id", org.id)
+        .single();
+
+    if (existingMembership) {
+      alert("You already joined this organization");
+      return;
+    }
+
+    // insert membership
+    const { error: memError } =
+      await supabase
+        .from("memberships")
+        .insert([
+          {
+            user_id: currentUser.id,
+            org_id: org.id,
+            role: "member"
+          }
+        ]);
+
+    if (memError) {
+      alert(memError.message);
+      return;
+    }
+
+    alert("Joined Organization Successfully!");
+
+    window.location.href = "dashboard.html";
+
+  });
+
+});
+</script>
+</body>
+</html>

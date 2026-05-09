@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Create Election</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+:root{--maroon:#6b0f1a;--dark-maroon:#4a0710;--gold:#d4af37;--white:#ffffff;--text:#2b2b2b;--border:#e6e6e6;}
+*{box-sizing:border-box;font-family:"Segoe UI",Arial,sans-serif;}
+body{margin:0;color:var(--text);background:linear-gradient(135deg,rgba(75,7,16,0.88),rgba(107,15,26,0.92)),url('https://images.unsplash.com/photo-1523580846011-d3a5bc25702b?q=80&w=1600&auto=format&fit=crop') center/cover fixed;}
+.election-page{min-height:100vh;padding:50px 20px;max-width:1200px;margin:0 auto;}
+.page-header{text-align:center;margin-bottom:35px;}
+.page-header h1{color:var(--white);font-size:2.4em;letter-spacing:0.5px;margin-bottom:6px;}
+.page-header p{color:rgba(255,255,255,0.75);font-size:1.05em;}
+.election-layout{display:grid;grid-template-columns:360px 1fr;grid-template-areas:"info form";gap:25px;}
+.card{background:rgba(255,255,255,0.92);backdrop-filter:blur(10px);border-radius:20px;box-shadow:0 10px 35px rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.3);border-top:5px solid var(--gold);padding:25px;transition:0.25s ease;}
+.card:hover{transform:translateY(-2px);box-shadow:0 14px 45px rgba(0,0,0,0.3);}
+.info-panel{grid-area:info;background:linear-gradient(180deg,var(--maroon),var(--dark-maroon));color:white;}
+.election-form-card{grid-area:form;}
+.card h2{margin-top:0;font-size:1.35em;color:var(--maroon);border-bottom:2px solid rgba(212,175,55,0.3);padding-bottom:8px;}
+.info-panel h2{color:var(--gold);border-bottom:2px solid rgba(255,255,255,0.2);}
+.info-box{margin-top:15px;padding:14px;background:rgba(255,255,255,0.08);border-left:4px solid var(--gold);border-radius:10px;font-size:14px;line-height:1.5;}
+.info-box strong{color:var(--gold);display:block;margin-bottom:4px;}
+label{display:block;margin-top:16px;margin-bottom:6px;font-weight:600;color:var(--maroon);font-size:13px;}
+input,textarea{width:100%;padding:12px;border:1px solid var(--border);border-radius:10px;outline:none;font-size:14px;transition:0.2s ease;background:#fff;}
+input:focus,textarea:focus{border-color:var(--gold);box-shadow:0 0 0 4px rgba(212,175,55,0.15);}
+textarea{min-height:85px;resize:vertical;}
+input[type="file"]{padding:10px;border:2px dashed rgba(107,15,26,0.25);background:#fffdf8;cursor:pointer;}
+input[type="file"]:hover{border-color:var(--gold);background:#fff8ef;}
+.main-btn{width:100%;margin-top:22px;padding:14px;border:none;border-radius:12px;background:linear-gradient(135deg,var(--gold),#c19b2e);color:var(--dark-maroon);font-weight:700;font-size:15px;cursor:pointer;transition:0.2s ease;}
+.main-btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 10px 25px rgba(212,175,55,0.3);}
+.main-btn:disabled{opacity:0.6;cursor:not-allowed;}
+.candidates-card{margin-top:25px;}
+.candidate{margin-top:16px;padding:18px;border-radius:14px;border:1px solid rgba(0,0,0,0.08);background:linear-gradient(135deg,#fff8ef,#fffdf8);transition:0.2s;}
+.candidate:hover{border-color:var(--gold);box-shadow:0 8px 20px rgba(0,0,0,0.12);}
+.candidate h4{margin:0 0 10px;color:var(--maroon);}
+.preview{width:70px;height:70px;border-radius:14px;object-fit:cover;margin-top:10px;display:none;border:2px solid var(--gold);box-shadow:0 5px 15px rgba(0,0,0,0.15);}
+#msg{margin-top:14px;font-size:14px;font-weight:600;min-height:20px;}
+@media(max-width:900px){.election-layout{grid-template-columns:1fr;grid-template-areas:"info" "form";}}
+@media(max-width:500px){.election-page{padding:25px 12px;}.card{padding:20px;}}
+</style>
+</head>
+<body>
+<div class="election-page">
+
+  <div class="page-header">
+    <h1>Create Election</h1>
+    <p>Admin Election Builder</p>
+  </div>
+
+  <div class="election-layout">
+    <div class="card info-panel">
+      <h2>📋 Rules</h2>
+      <div class="info-box"><strong>🔐 Admin Only</strong>Only organization admins can create elections</div>
+      <div class="info-box"><strong>🗳️ One Vote Per User</strong>Each member votes exactly once</div>
+      <div class="info-box"><strong>👥 Minimum 3 Candidates</strong>All three candidate slots required</div>
+      <div class="info-box"><strong>🖼️ Complete Profiles</strong>Image required for each candidate</div>
+    </div>
+
+    <div class="card election-form-card">
+      <h2>📊 Election Details</h2>
+      <label for="title">Election Title</label>
+      <input id="title" type="text" placeholder="e.g. Student Council President">
+      <label for="desc">Description</label>
+      <textarea id="desc" placeholder="Brief description of the election..."></textarea>
+      <label for="start">Start Date</label>
+      <input type="date" id="start">
+      <label for="end">End Date</label>
+      <input type="date" id="end">
+      <button id="submitBtn" class="main-btn">🚀 Create Election</button>
+      <div id="msg"></div>
+    </div>
+  </div>
+
+  <div class="card candidates-card">
+    <h2>👥 Candidates</h2>
+
+    <div class="candidate">
+      <h4>Candidate 1</h4>
+      <input id="c1_name" placeholder="Full Name">
+      <input id="c1_position" placeholder="Position / Role" style="margin-top:10px;">
+      <input type="file" id="c1_img" accept="image/*" style="margin-top:10px;">
+      <img class="preview" id="p1" alt="Preview">
+    </div>
+
+    <div class="candidate">
+      <h4>Candidate 2</h4>
+      <input id="c2_name" placeholder="Full Name">
+      <input id="c2_position" placeholder="Position / Role" style="margin-top:10px;">
+      <input type="file" id="c2_img" accept="image/*" style="margin-top:10px;">
+      <img class="preview" id="p2" alt="Preview">
+    </div>
+
+    <div class="candidate">
+      <h4>Candidate 3</h4>
+      <input id="c3_name" placeholder="Full Name">
+      <input id="c3_position" placeholder="Position / Role" style="margin-top:10px;">
+      <input type="file" id="c3_img" accept="image/*" style="margin-top:10px;">
+      <img class="preview" id="p3" alt="Preview">
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  const SUPABASE_URL  = "https://soiufzbqvwillwockoro.supabase.co";
+  const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNvaXVmemJxdndpbGx3b2Nrb3JvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgwNTM3MDAsImV4cCI6MjA5MzYyOTcwMH0.jtgpM2majh0ZD-Kt2v8L_heQKQn3v5bBoYMM814veuA";
+
+  const sb  = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+  const $   = id => document.getElementById(id);
+  const msg = (html, color = "inherit") => { $("msg").innerHTML = html; $("msg").style.color = color; };
+
+  function attachPreview(inputId, previewId) {
+    $(inputId).addEventListener("change", () => {
+      const file = $(inputId).files[0];
+      if (file) { $(previewId).src = URL.createObjectURL(file); $(previewId).style.display = "block"; }
+    });
+  }
+
+  async function uploadImage(file) {
+    if (!file) return null;
+    const ext      = file.name.split(".").pop();
+    const fileName = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+    const { error: uploadError } = await sb.storage.from("Candidates").upload(fileName, file, { upsert: false });
+    if (uploadError) throw new Error("Image upload failed: " + uploadError.message);
+    const { data } = sb.storage.from("Candidates").getPublicUrl(fileName);
+    return data.publicUrl;
+  }
+
+  document.addEventListener("DOMContentLoaded", async () => {
+
+    attachPreview("c1_img", "p1");
+    attachPreview("c2_img", "p2");
+    attachPreview("c3_img", "p3");
+
+    // AUTH
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) { window.location.href = "login.html"; return; }
+
+    const user  = session.user;
+    const orgId = new URLSearchParams(window.location.search).get("org");
+
+    console.log("✅ user_id:", user.id);
+    console.log("✅ org_id:", orgId);
+
+    if (!orgId) {
+      alert("Missing org ID in URL — navigate here via the dashboard.");
+      return;
+    }
+
+    // ADMIN CHECK
+    const { data: member, error: memErr } = await sb
+      .from("memberships")
+      .select("role")
+      .eq("user_id", user.id)
+      .eq("org_id", orgId)
+      .eq("role", "admin")
+      .maybeSingle();
+
+    console.log("membership:", member, "| error:", memErr);
+
+    if (!member) {
+      alert("Not authorized — no admin role found for this organization.");
+      window.location.href = "dashboard.html";
+      return;
+    }
+
+    // SUBMIT
+    $("submitBtn").addEventListener("click", async () => {
+
+      const title = $("title").value.trim();
+      const desc  = $("desc").value.trim();
+      const start = $("start").value;
+      const end   = $("end").value;
+
+      if (!title)         return msg("❌ Election title is required.", "red");
+      if (!start || !end) return msg("❌ Start and end dates are required.", "red");
+      if (start >= end)   return msg("❌ End date must be after start date.", "red");
+
+      const cFields = [
+        { name: $("c1_name").value.trim(), img: $("c1_img").files[0], label: "Candidate 1" },
+        { name: $("c2_name").value.trim(), img: $("c2_img").files[0], label: "Candidate 2" },
+        { name: $("c3_name").value.trim(), img: $("c3_img").files[0], label: "Candidate 3" },
+      ];
+      for (const c of cFields) {
+        if (!c.name) return msg(`❌ ${c.label}: name is required.`, "red");
+        if (!c.img)  return msg(`❌ ${c.label}: image is required.`, "red");
+      }
+
+      $("submitBtn").disabled = true;
+      msg("⏳ Uploading images...", "var(--maroon)");
+
+      try {
+        const [img1, img2, img3] = await Promise.all([
+          uploadImage($("c1_img").files[0]),
+          uploadImage($("c2_img").files[0]),
+          uploadImage($("c3_img").files[0]),
+        ]);
+
+        msg("⏳ Creating election...", "var(--maroon)");
+
+        const { data: election, error: elecErr } = await sb
+          .from("elections")
+          .insert([{
+            org_id:      orgId,
+            title,
+            description: desc,
+            start_time:  start,
+            end_time:    end,
+            status:      "ongoing",
+            created_by:  user.id
+          }])
+          .select()
+          .single();
+
+        if (elecErr) throw new Error("Election insert failed: " + elecErr.message);
+
+        const { error: candErr } = await sb.from("candidates").insert([
+          { election_id: election.id, name: $("c1_name").value.trim(), position: $("c1_position").value.trim(), image_url: img1 },
+          { election_id: election.id, name: $("c2_name").value.trim(), position: $("c2_position").value.trim(), image_url: img2 },
+          { election_id: election.id, name: $("c3_name").value.trim(), position: $("c3_position").value.trim(), image_url: img3 },
+        ]);
+
+        if (candErr) throw new Error("Candidate insert failed: " + candErr.message);
+
+        msg("✅ Election created successfully!", "green");
+        setTimeout(() => { window.location.href = "dashboard.html"; }, 1400);
+
+      } catch (err) {
+        console.error(err);
+        msg("❌ " + err.message, "red");
+        $("submitBtn").disabled = false;
+      }
+    });
+  });
+</script>
+</body>
+</html>

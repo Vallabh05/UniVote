@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Vote - Election</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root {
+  --maroon: #6b0f1a;
+  --dark-maroon: #4a0710;
+  --gold: #d4af37;
+  --white: #ffffff;
+  --light-bg: #f8f3f0;
+  --text: #2b2b2b;
+  --gray: #666;
+  --light-gray: #f1f1f1;
+  --border: #e6e6e6;
+}
+
+* { box-sizing: border-box; font-family: "Segoe UI", Arial, sans-serif; margin: 0; padding: 0; }
+
+body {
+  min-height: 100vh;
+  color: var(--text);
+  background:
+    linear-gradient(135deg, rgba(75,7,16,0.88), rgba(107,15,26,0.92)),
+    url('https://images.unsplash.com/photo-1523580846011-d3a5bc25702b?q=80&w=1600&auto=format&fit=crop')
+    center/cover fixed;
+}
+
+.vote-page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 50px 20px;
+}
+
+.page-header {
+  text-align: center;
+  margin-bottom: 35px;
+}
+
+.page-header h1 {
+  color: var(--white);
+  font-size: 2.4em;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+
+.page-header p {
+  color: rgba(255,255,255,0.75);
+  font-size: 1.05em;
+}
+
+.card {
+  background: rgba(255,255,255,0.92);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  box-shadow: 0 10px 35px rgba(0,0,0,0.25);
+  border: 1px solid rgba(255,255,255,0.3);
+  border-top: 5px solid var(--gold);
+  padding: 28px;
+  transition: 0.25s ease;
+}
+
+.election-banner {
+  margin-bottom: 28px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.election-banner h2 {
+  color: var(--maroon);
+  font-size: 1.5em;
+  margin-bottom: 6px;
+}
+
+.election-banner p {
+  color: var(--gray);
+  font-size: 14px;
+}
+
+.candidates-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+  gap: 22px;
+  margin-bottom: 28px;
+}
+
+.candidate-card {
+  background: rgba(255,255,255,0.92);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 10px 35px rgba(0,0,0,0.2);
+  border: 3px solid transparent;
+  border-top: 5px solid var(--border);
+  cursor: pointer;
+  transition: all 0.25s ease;
+  position: relative;
+}
+
+.candidate-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 18px 40px rgba(0,0,0,0.3);
+  border-color: var(--gold);
+  border-top-color: var(--gold);
+}
+
+.candidate-card.selected {
+  border-color: var(--gold);
+  border-top-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(212,175,55,0.4), 0 14px 40px rgba(0,0,0,0.25);
+}
+
+/* locked state: no hover, dimmed */
+.candidate-card.locked {
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+.candidate-card.locked:hover {
+  transform: none;
+  box-shadow: 0 10px 35px rgba(0,0,0,0.2);
+  border-color: transparent;
+  border-top-color: var(--border);
+}
+
+.check {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  background: var(--gold);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  opacity: 0;
+  transform: scale(0.4);
+  transition: all 0.2s ease;
+  z-index: 2;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.candidate-card.selected .check {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.candidate-img {
+  width: 100%;
+  height: 210px;
+  object-fit: cover;
+  display: block;
+  background: var(--light-gray);
+}
+
+.candidate-img-placeholder {
+  width: 100%;
+  height: 210px;
+  background: linear-gradient(135deg, #f8f3f0, #ece4dc);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 56px;
+}
+
+.candidate-info {
+  padding: 18px 20px 20px;
+}
+
+.candidate-info h3 {
+  color: var(--maroon);
+  font-size: 1.15em;
+  margin-bottom: 4px;
+}
+
+.candidate-info .position {
+  color: var(--gray);
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+.vote-bar-wrap { margin-top: 10px; }
+
+.vote-bar-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--gray);
+  margin-bottom: 5px;
+}
+
+.vote-bar-track {
+  height: 7px;
+  background: var(--light-gray);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.vote-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--maroon), var(--gold));
+  border-radius: 10px;
+  transition: width 0.6s ease;
+  width: 0%;
+}
+
+.submit-area {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.selected-label { color: var(--gray); font-size: 14px; }
+.selected-label span { font-weight: 700; color: var(--maroon); }
+
+.main-btn {
+  padding: 14px 36px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--gold), #c19b2e);
+  color: var(--dark-maroon);
+  font-weight: 700;
+  font-size: 15px;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.main-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(212,175,55,0.35);
+}
+
+.main-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+#voteMsg {
+  margin-top: 16px;
+  font-size: 14px;
+  font-weight: 600;
+  min-height: 20px;
+  text-align: center;
+}
+
+/* voted / closed banner */
+.voted-banner {
+  background: rgba(107,15,26,0.07);
+  border: 2px solid var(--gold);
+  border-radius: 14px;
+  padding: 18px 24px;
+  text-align: center;
+  color: var(--maroon);
+  font-weight: 600;
+  font-size: 15px;
+  margin-top: 16px;
+  display: none;
+}
+
+/* closed-specific styling */
+.voted-banner.closed {
+  background: rgba(107,15,26,0.12);
+  border-color: var(--maroon);
+  color: var(--maroon);
+}
+
+.loading {
+  text-align: center;
+  color: var(--white);
+  padding: 80px 20px;
+  font-size: 1.1em;
+  opacity: 0.8;
+}
+
+@media (max-width: 600px) {
+  .election-banner { flex-direction: column; align-items: flex-start; }
+  .submit-area { flex-direction: column; align-items: stretch; }
+  .main-btn { width: 100%; text-align: center; }
+  .page-header h1 { font-size: 1.8em; }
+}
+</style>
+</head>
+<body>
+
+<div class="vote-page">
+
+  <div class="page-header">
+    <h1>🗳️ Cast Your Vote</h1>
+    <p>One student, one vote. Choose wisely.</p>
+  </div>
+
+  <div id="loadingState" class="loading">⏳ Loading election...</div>
+
+  <div id="mainContent" style="display:none;">
+
+    <div class="card election-banner">
+      <div>
+        <h2 id="electionTitle">Election</h2>
+        <p id="electionDesc"></p>
+      </div>
+    </div>
+
+    <div class="candidates-grid" id="candidatesGrid"></div>
+
+    <div class="card">
+      <div class="submit-area">
+        <div class="selected-label">Selected: <span id="selectedName">None</span></div>
+        <button class="main-btn" id="voteBtn" disabled>Submit Vote →</button>
+      </div>
+      <div id="voteMsg"></div>
+      <div class="voted-banner" id="votedBanner">You have already voted in this election.</div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+const SUPABASE_URL  = "https://soiufzbqvwillwockoro.supabase.co";
+const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNvaXVmemJxdndpbGx3b2Nrb3JvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgwNTM3MDAsImV4cCI6MjA5MzYyOTcwMH0.jtgpM2majh0ZD-Kt2v8L_heQKQn3v5bBoYMM814veuA";
+
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+const $  = id => document.getElementById(id);
+
+let selectedCandidateId = null;
+let electionId = null;
+let userId = null;
+let electionClosed = false; // global flag
+let statusPoller = null;
+
+function msg(html, color = "var(--maroon)") {
+  $("voteMsg").innerHTML = html;
+  $("voteMsg").style.color = color;
+}
+
+function isElectionClosed(el) {
+  const now = new Date();
+  return el.status === "ended" || (el.end_time && new Date(el.end_time) < now);
+}
+
+function lockVoting(reason) {
+  electionClosed = true;
+
+  // Stop poller
+  if (statusPoller) { clearInterval(statusPoller); statusPoller = null; }
+
+  // Disable vote button
+  $("voteBtn").disabled = true;
+
+  // Show closed banner
+  const banner = $("votedBanner");
+  banner.innerText = reason;
+  banner.className = "voted-banner closed";
+  banner.style.display = "block";
+
+  // Lock all candidate cards
+  document.querySelectorAll(".candidate-card").forEach(card => {
+    card.classList.add("locked");
+    card.onclick = null;
+  });
+}
+
+document.addEventListener("DOMContentLoaded", async () => {
+
+  // AUTH
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) { window.location.href = "login.html"; return; }
+  userId = session.user.id;
+
+  // GET ELECTION ID FROM URL
+  electionId = new URLSearchParams(window.location.search).get("id");
+  if (!electionId) {
+    $("loadingState").innerText = "❌ No election ID in URL.";
+    return;
+  }
+
+  // FETCH ELECTION — include end_time
+  const { data: election, error: elecErr } = await sb
+    .from("elections")
+    .select("id, title, description, status, end_time")
+    .eq("id", electionId)
+    .single();
+
+  if (elecErr || !election) {
+    $("loadingState").innerText = "❌ Election not found.";
+    return;
+  }
+
+  $("electionTitle").innerText = election.title;
+  $("electionDesc").innerText  = election.description || "";
+
+  // ── CHECK IF ELECTION IS ALREADY CLOSED ON LOAD ──
+  const closedOnLoad = isElectionClosed(election);
+
+  // FETCH CANDIDATES
+  const { data: candidates, error: candErr } = await sb
+    .from("candidates")
+    .select("id, name, position, image_url")
+    .eq("election_id", electionId);
+
+  if (candErr || !candidates?.length) {
+    $("loadingState").innerText = "❌ No candidates found.";
+    return;
+  }
+
+  // FETCH VOTE COUNTS
+  const { data: allVotes } = await sb
+    .from("votes")
+    .select("candidate_id")
+    .eq("election_id", electionId);
+
+  const voteCounts = {};
+  candidates.forEach(c => voteCounts[c.id] = 0);
+  (allVotes || []).forEach(v => {
+    if (voteCounts[v.candidate_id] !== undefined)
+      voteCounts[v.candidate_id]++;
+  });
+  const totalVotes = Object.values(voteCounts).reduce((a, b) => a + b, 0);
+
+  // CHECK IF USER ALREADY VOTED
+  const { data: myVote } = await sb
+    .from("votes")
+    .select("candidate_id")
+    .eq("election_id", electionId)
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  const alreadyVoted = !!myVote;
+
+  // RENDER CANDIDATES
+  const grid = $("candidatesGrid");
+  grid.innerHTML = "";
+
+  candidates.forEach(c => {
+    const pct      = totalVotes > 0 ? Math.round((voteCounts[c.id] / totalVotes) * 100) : 0;
+    const isMyVote = myVote?.candidate_id === c.id;
+
+    const imgHtml = c.image_url
+      ? `<img class="candidate-img" src="${c.image_url}" alt="${c.name}">`
+      : `<div class="candidate-img-placeholder">👤</div>`;
+
+    const card = document.createElement("div");
+    card.className = "candidate-card" + (isMyVote ? " selected" : "");
+    card.dataset.id   = c.id;
+    card.dataset.name = c.name;
+
+    card.innerHTML = `
+      <div class="check">✓</div>
+      ${imgHtml}
+      <div class="candidate-info">
+        <h3>${c.name}</h3>
+        <p class="position">${c.position || ""}</p>
+        <div class="vote-bar-wrap">
+          <div class="vote-bar-label">
+            <span>${voteCounts[c.id]} vote${voteCounts[c.id] !== 1 ? "s" : ""}</span>
+            <span>${pct}%</span>
+          </div>
+          <div class="vote-bar-track">
+            <div class="vote-bar-fill" style="width:${pct}%"></div>
+          </div>
+        </div>
+      </div>`;
+
+    // Only attach click if not already voted AND not closed
+    if (!alreadyVoted && !closedOnLoad) {
+      card.addEventListener("click", () => {
+        if (electionClosed) return; // extra safety guard
+        document.querySelectorAll(".candidate-card").forEach(c => c.classList.remove("selected"));
+        card.classList.add("selected");
+        selectedCandidateId = c.id;
+        $("selectedName").innerText = c.name;
+        $("voteBtn").disabled = false;
+      });
+    }
+
+    grid.appendChild(card);
+  });
+
+  // SHOW PAGE
+  $("loadingState").style.display = "none";
+  $("mainContent").style.display  = "block";
+
+  // Apply correct state AFTER rendering
+  if (closedOnLoad) {
+    lockVoting("⛔ This election has ended. Voting is closed.");
+  } else if (alreadyVoted) {
+    $("voteBtn").disabled = true;
+    $("votedBanner").style.display = "block";
+    $("selectedName").innerText = candidates.find(c => c.id === myVote.candidate_id)?.name || "—";
+  }
+
+  // ── POLL every 5s to catch admin ending election live ──
+  if (!closedOnLoad && !alreadyVoted) {
+    statusPoller = setInterval(async () => {
+      const { data } = await sb
+        .from("elections")
+        .select("status, end_time")
+        .eq("id", electionId)
+        .single();
+
+      if (!data) return;
+
+      if (isElectionClosed(data)) {
+        lockVoting("⛔ This election has been closed by the administrator. Voting is no longer allowed.");
+      }
+    }, 5000);
+  }
+
+  // SUBMIT VOTE
+  $("voteBtn").addEventListener("click", async () => {
+    if (!selectedCandidateId || electionClosed) return;
+
+    // Double-check status right before submitting
+    const { data: freshEl } = await sb
+      .from("elections")
+      .select("status, end_time")
+      .eq("id", electionId)
+      .single();
+
+    if (freshEl && isElectionClosed(freshEl)) {
+      lockVoting("⛔ This election has ended. Your vote was not submitted.");
+      return;
+    }
+
+    $("voteBtn").disabled = true;
+    msg("⏳ Submitting your vote...");
+
+    const { error } = await sb.from("votes").insert([{
+      election_id:  electionId,
+      candidate_id: selectedCandidateId,
+      user_id:      userId
+    }]);
+
+    if (error) {
+      if (error.code === "23505") {
+        msg("⚠️ You have already voted in this election.", "orange");
+        $("votedBanner").style.display = "block";
+      } else {
+        msg("❌ " + error.message, "red");
+        $("voteBtn").disabled = false;
+      }
+      return;
+    }
+
+    if (statusPoller) { clearInterval(statusPoller); statusPoller = null; }
+    msg("✅ Vote submitted successfully!", "green");
+    $("votedBanner").style.display = "block";
+    setTimeout(() => window.location.href = "dashboard.html", 1500);
+  });
+
+});
+</script>
+</body>
+</html>

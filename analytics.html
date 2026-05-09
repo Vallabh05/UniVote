@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Analytics - College Voting Portal</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--maroon:#6b0f1a;--dark-maroon:#4a0710;--gold:#d4af37;--white:#ffffff;--light-bg:#f8f3f0;--text:#2b2b2b;--gray:#666;--light-gray:#f1f1f1;--border:#e6e6e6;}
+*{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif;}
+body{background:var(--light-bg);color:var(--text);min-height:100vh;
+background:
+    linear-gradient(135deg, rgba(75,7,16,0.88), rgba(107,15,26,0.92)),
+    url('https://images.unsplash.com/photo-1523580846011-d3a5bc25702b?q=80&w=1600&auto=format&fit=crop')
+    center/cover fixed;}
+.page{max-width:800px;margin:0 auto;padding:35px 20px 60px;}
+
+.page-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:28px;gap:12px;flex-wrap:wrap;}
+.page-header h1{font-size:1.5em;color:var(--maroon);}
+.back-btn{padding:9px 16px;border-radius:8px;background:var(--white);border:1px solid var(--border);color:var(--gray);text-decoration:none;font-size:13px;font-weight:bold;}
+.back-btn:hover{border-color:var(--maroon);color:var(--maroon);}
+
+.status-row{display:flex;align-items:center;gap:12px;margin-bottom:22px;flex-wrap:wrap;}
+.election-title-text{font-size:1.15em;font-weight:bold;color:var(--maroon);}
+.pill{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;}
+.pill-ongoing{background:rgba(34,197,94,0.1);color:#16a34a;border:1px solid rgba(34,197,94,0.3);}
+.pill-ended{background:rgba(107,15,26,0.08);color:var(--maroon);border:1px solid rgba(107,15,26,0.2);}
+.live-dot{width:7px;height:7px;border-radius:50%;background:#22c55e;animation:blink 1.4s infinite;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:0.3;}}
+
+.summary{background:var(--white);border-radius:12px;padding:18px 22px;margin-bottom:20px;box-shadow:0 2px 10px rgba(0,0,0,0.06);display:flex;gap:30px;flex-wrap:wrap;}
+.summary-item{font-size:13px;color:var(--gray);}
+.summary-item strong{display:block;font-size:1.4em;color:var(--maroon);line-height:1.1;margin-bottom:2px;}
+
+.card{background:var(--white);border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,0.06);overflow:hidden;margin-bottom:20px;}
+.candidate-row{display:flex;align-items:center;gap:14px;padding:16px 20px;border-bottom:1px solid var(--light-gray);}
+.candidate-row:last-child{border-bottom:none;}
+.rank{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:bold;flex-shrink:0;}
+.r1{background:var(--gold);color:var(--dark-maroon);}
+.r2{background:#e8e8e8;color:#555;}
+.r3{background:#f0e0c8;color:#8b5e3c;}
+.rn{background:rgba(107,15,26,0.08);color:var(--maroon);}
+.cimg{width:44px;height:44px;border-radius:10px;object-fit:cover;border:1px solid var(--border);flex-shrink:0;background:var(--light-gray);display:flex;align-items:center;justify-content:center;font-size:18px;overflow:hidden;}
+.cimg img{width:100%;height:100%;object-fit:cover;}
+.cinfo{flex:1;min-width:0;}
+.cname{font-weight:bold;color:var(--maroon);font-size:14px;margin-bottom:2px;}
+.cpos{color:var(--gray);font-size:12px;margin-bottom:8px;}
+.bar-wrap{display:flex;align-items:center;gap:8px;}
+.bar-track{flex:1;height:6px;background:var(--light-gray);border-radius:6px;overflow:hidden;}
+.bar-fill{height:100%;background:linear-gradient(90deg,var(--maroon),var(--gold));border-radius:6px;transition:width 0.5s ease;}
+.bar-pct{font-size:12px;color:var(--gray);width:34px;text-align:right;flex-shrink:0;}
+.cvotes{font-size:12px;color:var(--gray);white-space:nowrap;flex-shrink:0;}
+
+.admin-panel{background:var(--white);border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,0.06);padding:20px 22px;}
+.admin-panel h3{font-size:14px;font-weight:bold;color:var(--maroon);margin-bottom:16px;}
+.end-btn{width:100%;padding:12px;border:none;border-radius:8px;background:var(--maroon);color:white;font-weight:bold;font-size:14px;cursor:pointer;transition:0.2s;}
+.end-btn:hover:not(:disabled){background:var(--dark-maroon);}
+.end-btn:disabled{opacity:0.5;cursor:not-allowed;background:#ccc;color:#888;}
+
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;z-index:50;opacity:0;pointer-events:none;transition:opacity 0.2s;}
+.overlay.show{opacity:1;pointer-events:all;}
+.modal{background:white;border-radius:16px;padding:28px;width:360px;max-width:92vw;border-top:4px solid var(--maroon);}
+.modal h3{color:var(--maroon);margin-bottom:8px;}
+.modal p{color:var(--gray);font-size:13px;line-height:1.6;margin-bottom:20px;}
+.modal-btns{display:flex;gap:10px;}
+.modal-btns button{flex:1;padding:11px;border-radius:8px;font-weight:bold;font-size:13px;cursor:pointer;}
+.btn-cancel{border:1px solid var(--border);background:white;color:var(--gray);}
+.btn-confirm{border:none;background:var(--maroon);color:white;}
+.btn-confirm:hover{background:var(--dark-maroon);}
+
+.loading{text-align:center;padding:60px;color:var(--gray);}
+.updated{font-size:12px;color:var(--gray);margin-bottom:16px;}
+
+.winner{background:linear-gradient(135deg,var(--gold),#c19b2e);border-radius:12px;padding:16px 20px;margin-bottom:20px;display:flex;align-items:center;gap:14px;}
+.winner-info h3{color:var(--dark-maroon);font-size:15px;margin-bottom:2px;}
+.winner-info p{font-size:12px;color:rgba(74,7,16,0.7);}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="page-header" >
+    <h1 style="color: white;">📊 Election Analytics</h1>
+    <a class="back-btn" href="dashboard.html">← Back</a>
+  </div>
+
+  <div id="loadingState" class="loading">Loading...</div>
+
+  <div id="mainContent" style="display:none;">
+
+    <div class="status-row">
+      <span class="election-title-text" id="electionTitle" style="color: white;"></span>
+      <span class="pill pill-ongoing" id="statusPill"><span class="live-dot"></span> Ongoing</span>
+    </div>
+
+    <div id="winnerBanner" style="display:none;" class="winner">
+      <div style="font-size:2em;">🏆</div>
+      <div class="winner-info">
+        <h3 id="winnerName"></h3>
+        <p id="winnerDesc"></p>
+      </div>
+    </div>
+
+    <div class="summary">
+      <div class="summary-item"><strong id="statTotal">0</strong>Total Votes</div>
+      <div class="summary-item"><strong id="statLeader">—</strong>Leading</div>
+      <div class="summary-item"><strong id="statLeadPct">0%</strong>Leader's Share</div>
+    </div>
+
+    <div class="card" id="candidatesList"></div>
+
+    <div class="updated" id="updatedLine" style="color: #bdbdbd;"></div>
+
+    <div class="admin-panel" id="adminPanel" style="display:none;">
+      <h3>Admin Controls</h3>
+      <button class="end-btn" id="endBtn">🛑 End Election</button>
+    </div>
+
+  </div>
+</div>
+
+<div class="overlay" id="modal">
+  <div class="modal">
+    <h3>End this election?</h3>
+    <p>Voting will be closed immediately. This cannot be undone.</p>
+    <div class="modal-btns">
+      <button class="btn-cancel" id="modalCancel">Cancel</button>
+      <button class="btn-confirm" id="modalConfirm">Yes, End It</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL  = "https://soiufzbqvwillwockoro.supabase.co";
+const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNvaXVmemJxdndpbGx3b2Nrb3JvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgwNTM3MDAsImV4cCI6MjA5MzYyOTcwMH0.jtgpM2majh0ZD-Kt2v8L_heQKQn3v5bBoYMM814veuA";
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+const $ = id => document.getElementById(id);
+
+let electionId, orgId, userId, candidates = [], election;
+let votePoller = null;
+
+function isElectionClosed(el) {
+  const now = new Date();
+  return el.status === "ended" || (el.end_time && new Date(el.end_time) < now);
+}
+
+function markEnded() {
+  election.status = "ended";
+  const pill = $("statusPill");
+  pill.className = "pill pill-ended";
+  pill.innerHTML = "● Ended";
+  if ($("endBtn")) {
+    $("endBtn").disabled = true;
+    $("endBtn").innerText = "✅ Election Ended";
+  }
+  // Stop vote poller once ended
+  if (votePoller) { clearInterval(votePoller); votePoller = null; }
+}
+
+async function fetchAndRender() {
+  const { data: votes } = await sb.from("votes").select("candidate_id").eq("election_id", electionId);
+
+  const counts = {};
+  candidates.forEach(c => counts[c.id] = 0);
+  (votes || []).forEach(v => { if (counts[v.candidate_id] !== undefined) counts[v.candidate_id]++; });
+  const total = Object.values(counts).reduce((a,b) => a+b, 0);
+
+  const sorted = [...candidates].sort((a,b) => (counts[b.id]||0) - (counts[a.id]||0));
+
+  $("statTotal").innerText = total;
+  if (total > 0) {
+    $("statLeader").innerText  = sorted[0].name.split(" ")[0];
+    $("statLeadPct").innerText = Math.round((counts[sorted[0].id] / total) * 100) + "%";
+  }
+
+  const rankClass = ["r1","r2","r3"];
+  $("candidatesList").innerHTML = sorted.map((c,i) => {
+    const v   = counts[c.id] || 0;
+    const pct = total > 0 ? Math.round((v/total)*100) : 0;
+    const img = c.image_url
+      ? `<img src="${c.image_url}" alt="${c.name}" onerror="this.style.display='none'">`
+      : "👤";
+    return `
+      <div class="candidate-row">
+        <div class="rank ${rankClass[i] || 'rn'}">${i+1}</div>
+        <div class="cimg">${img}</div>
+        <div class="cinfo">
+          <div class="cname">${c.name}</div>
+          <div class="cpos">${c.position || ""}</div>
+          <div class="bar-wrap">
+            <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div>
+            <div class="bar-pct">${pct}%</div>
+          </div>
+        </div>
+        <div class="cvotes">${v} vote${v!==1?"s":""}</div>
+      </div>`;
+  }).join("");
+
+  if (isElectionClosed(election) && total > 0) {
+    const w = sorted[0];
+    $("winnerName").innerText = w.name;
+    $("winnerDesc").innerText = `${counts[w.id]} votes · ${Math.round((counts[w.id]/total)*100)}% share`;
+    $("winnerBanner").style.display = "flex";
+  }
+
+  $("updatedLine").innerText = "Updated " + new Date().toLocaleTimeString();
+}
+
+document.addEventListener("DOMContentLoaded", async () => {
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) { window.location.href = "login.html"; return; }
+  userId = session.user.id;
+
+  const p = new URLSearchParams(window.location.search);
+  electionId = p.get("id");
+  orgId      = p.get("org");
+
+  if (!electionId && orgId) {
+    const { data } = await sb.from("elections").select("id").eq("org_id", orgId).order("created_at",{ascending:false}).limit(1).single();
+    if (data) electionId = data.id;
+  }
+  if (!electionId) { $("loadingState").innerText = "❌ No election found."; return; }
+
+  // ── include end_time in fetch ──
+  const { data: el } = await sb.from("elections").select("*").eq("id", electionId).single();
+  if (!el) { $("loadingState").innerText = "❌ Election not found."; return; }
+  election = el;
+  if (!orgId) orgId = el.org_id;
+
+  const { data: cands } = await sb.from("candidates").select("id,name,position,image_url").eq("election_id", electionId);
+  if (!cands?.length) { $("loadingState").innerText = "❌ No candidates found."; return; }
+  candidates = cands;
+
+  $("electionTitle").innerText = el.title;
+
+  // Set correct pill on load
+  if (isElectionClosed(el)) {
+    const pill = $("statusPill");
+    pill.className = "pill pill-ended";
+    pill.innerHTML = "● Ended";
+  }
+
+  // Admin check
+  const { data: mem } = await sb.from("memberships").select("role").eq("user_id",userId).eq("org_id",orgId).eq("role","admin").maybeSingle();
+  if (mem) {
+    $("adminPanel").style.display = "block";
+    if (isElectionClosed(el)) {
+      $("endBtn").disabled = true;
+      $("endBtn").innerText = "✅ Election Ended";
+    }
+  }
+
+  await fetchAndRender();
+  $("loadingState").style.display = "none";
+  $("mainContent").style.display  = "block";
+
+  // ── POLL votes every 5s (replaces realtime for vote count updates) ──
+  votePoller = setInterval(async () => {
+    // Also re-check election status in case it was ended elsewhere
+    const { data: freshEl } = await sb
+      .from("elections")
+      .select("status, end_time")
+      .eq("id", electionId)
+      .single();
+
+    if (freshEl && isElectionClosed(freshEl) && !isElectionClosed(election)) {
+      election.status = freshEl.status;
+      election.end_time = freshEl.end_time;
+      markEnded();
+    }
+
+    await fetchAndRender();
+  }, 5000);
+
+  // End election button
+  $("endBtn")?.addEventListener("click", () => { $("modal").classList.add("show"); });
+  $("modalCancel").addEventListener("click", () => { $("modal").classList.remove("show"); });
+  $("modalConfirm").addEventListener("click", async () => {
+    $("modal").classList.remove("show");
+    $("endBtn").disabled = true;
+    $("endBtn").innerText = "Ending...";
+
+    const { error } = await sb.from("elections").update({ status: "ended" }).eq("id", electionId);
+
+    if (error) {
+      alert("Failed: " + error.message);
+      $("endBtn").disabled = false;
+      $("endBtn").innerText = "🛑 End Election";
+      return;
+    }
+
+    markEnded();
+    await fetchAndRender();
+  });
+});
+</script>
+</body>
+</html>
